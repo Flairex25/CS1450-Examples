@@ -1,38 +1,95 @@
 package FlairList;
 
-import java.util.ArrayList;
-
-public class FlairList<T> {
-    //Functional Interfaces
-    @FunctionalInterface 
-    public interface ListLoop<T> {
-        public void loopCallback(int i, T v);
-    }
-    @FunctionalInterface 
-    public interface ListSort<T> {
-        public boolean listSort(T a, T b);
-    }
-    //Private members
+public abstract class FlairList<T> implements FLIterable<T> {
+    //Private fields
+    protected T[] data;
     protected int size;
-    protected ArrayList<T> data = new ArrayList<>();
-    //Methods
+
     public int getSize() { return size; }
-    public boolean isEmpty() { return (size == 0); }
-    public void forEach(ListLoop<T> callback) {
+    public boolean isEmpty() { return size == 0; }
+
+    protected void outOfBoundsException(int index) {
+        throw new IllegalArgumentException("FlairListException: index " + index + " is out of bounds!");
+    }
+
+    public void add(int index, T value) {
+        if (index > size || index < 0) {
+            //Out of bounds
+            outOfBoundsException(index);
+        }
+        //Create new array
+        size++;
+        T[] oldData = data;
+        @SuppressWarnings("unchecked")
+        T[] newData = (T[]) new Object[size];
         for (int i = 0; i < size; i++) {
-            callback.loopCallback(i, data.get(i));
+            if (i < index) {
+                newData[i] = oldData[i];
+            }
+            else if (i > index) {
+                newData[i] = oldData[i - 1];
+            }
+        }
+        newData[index] = value;
+        data = newData;
+    }
+    public void add(T value) {
+        add(size, value);
+    }
+
+    public T get(int index) {
+        if (index < 0 || index >= size) {
+            outOfBoundsException(index);
+        }
+        return data[index];
+    }
+    
+    public T remove(int index) {
+        if (index < 0 || index >= size) {
+            outOfBoundsException(index);
+        }
+        T value = data[index];
+        //Move items to new array
+        size--;
+        T[] oldData = data;
+        @SuppressWarnings("unchecked")
+        T[] newData = (T[]) new Object[size];
+        for (int i = 0; i < size; i++) {
+            if (i < index) {
+                newData[i] = oldData[i];
+            }
+            else {
+                newData[i] = oldData[i+1];
+            }
+        }
+        this.data = newData;
+        return value;
+    }
+
+    public void clear() {
+        size = 0;
+        @SuppressWarnings("unchecked")
+        T[] newData = (T[]) new Object[size];
+        data = newData;
+    }
+
+    public void forEach(FLIterableForEach<T> forEachFunc) {
+        for (int i = 0; i < size; i++) {
+            forEachFunc.callback(i, data[i]);
         }
     }
+
     protected void swap(int indexA, int indexB) {
-        T a = data.get(indexA);
-        T b = data.get(indexB);
-        data.set(indexA, b);
-        data.set(indexB, a);
+        T temp = data[indexA];
+        data[indexA] = data[indexB];
+        data[indexB] = temp;
     }
-    public void sort(ListSort<T> callback) {
-        for (int i = 0; i < data.size(); i++) {
-            for (int v = 0; v < data.size()-1; v++) {
-                if (callback.listSort(data.get(v), data.get(v+1))) {
+
+    public void sort(FLIterableCompare<T> compareFunc) {
+        //Simple bubble sort
+        for (int i = 0; i < size; i++) {
+            for (int v = 0; v < size-1; v++) {
+                if (compareFunc.callback(data[v], data[v+1])) {
                     swap(v, v+1);
                 }
             }
